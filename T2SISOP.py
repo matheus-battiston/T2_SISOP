@@ -1,12 +1,15 @@
 #Matheus Felipe Battiston e Henrique Andreata
 class memoria:
-    def __init__(self, posicoes, tamanho_particao):
+    def __init__(self, posicoes, tamanho_particao, politica, fit):
+        self.politica = politica
+        self.fit = fit
         self.posicoes = posicoes
         self.tamanho_particao = tamanho_particao
-        self.qntdade_particoes = int(self.posicoes/self.tamanho_particao)
-        self.particoes = [None] * self.qntdade_particoes
-        for index, x in enumerate(self.particoes):
-            self.particoes[index] = particao(self.tamanho_particao)
+        if self.politica == 'PF':
+            self.qntdade_particoes = int(self.posicoes/self.tamanho_particao)
+            self.particoes = [None] * self.qntdade_particoes
+            for index, x in enumerate(self.particoes):
+                self.particoes[index] = particao(self.tamanho_particao)
            
            
     def tem_espaco(self):
@@ -16,6 +19,21 @@ class memoria:
         return False 
     
     def entrar(self, prog,tamanho):
+        if self.politica == 'PF':
+            self.entrar_particaoF(prog,tamanho)
+        elif self.fit == 'w' or self.fit == 'W':
+            self.entrar_particaoWF(prog,tamanho)
+        elif self.fit == 'F' or self.fit == 'f':
+            self.entrar_particaoFF(prog,tamanho)
+            
+            
+    def entrar_particaoWF(self,prog,tamanho):
+        pass
+    
+    def entrar_particaoFF(self,prog,tamanho):
+        pass
+            
+    def entrar_particaoF(self,prog,tamanho):
         if self.tem_espaco():
             if int(tamanho) <= self.tamanho_particao:
                 for x in self.particoes:
@@ -26,20 +44,18 @@ class memoria:
                 print('Nao foi possivel alocar pelo programa ter tamanho maior que o das partições')
         else:
             print('ESPAÇO INSUFICIENTE DE MEMORIA')
+        
     def sair(self,prog):
         for x in self.particoes:
             if x.ocupado !=0 and x.dados[0] == prog[0]:
                 x.liberar()
         
-    def printa_memoria(self):
+    def representa_memoria(self):
         auxiliar = 0
         index = 0
         frag = []
-        for x in self.particoes:
-            print(x.dados)
-            
+
         for index, x in enumerate(self.particoes):
-            #print(index)
             if x.ocupado == 0:
                 auxiliar += self.tamanho_particao
             else:
@@ -92,32 +108,43 @@ def leitura (arquivo):
     arq.close()
     return descricao
 
+def printa_memoria(frag):
+    for x in frag:
+        print( " | ",end = '')
+        print(x,end = '')
+        
+    print (" |")
+
 def execucao(sequencia, Mem):
+    frag = Mem.representa_memoria()
+    printa_memoria(frag)
+    print('========================')  
     
     for linha in sequencia:
-        frag = Mem.printa_memoria()
-        print(frag)
-
         if linha[0] == 'IN':
             Mem.entrar(linha[1][0],linha[1][1])
         elif linha[0] == 'OUT':
             Mem.sair(linha[1])
-        #print(linha)
-        
-    print(Mem.printa_memoria())
-
+        print(linha)
+        frag = Mem.representa_memoria()
+        printa_memoria(frag)
+        print("========================")
+        input("")      
+    
 def main():
     arquivo = "descricao1.txt"
     #arquivo = str(input("Digite o nome do arquivo: "))
     descricao = leitura(arquivo)
-    # x = int(input("Digite o tamanho da memoria: "))
-    # y = int(input("Digite o tamanho das partições: "))
-    x = 16
-    y = 4
-    Mem = memoria(x,y)
+    politica = str(input("Digite a politica F - partição fixa, V - partição variavel: "))
+    if politica == 'F' or politica == 'f':    
+        x = int(input("Digite o tamanho da memoria: "))
+        y = int(input("Digite o tamanho das partições: "))
+        Mem = memoria(x,y,'PF', None)
+    elif politica == 'V' or politica == 'v':
+        fit = str(input("Voce deseja qual politica de alocação? F - First-Fit W - Worst-Fit"))
+        x = int(input("Digite o tamanho da memoria: "))
+        Mem = memoria(x,0,'PV',fit)
     execucao(descricao,Mem)
-    
-    
     
 if __name__ == "__main__":
     main()
