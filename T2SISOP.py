@@ -1,97 +1,181 @@
-#Matheus Felipe Battiston e Henrique Andreata
 class memoria:
     def __init__(self, posicoes, tamanho_particao, politica, fit):
         self.politica = politica
         self.fit = fit
         self.posicoes = posicoes
         self.tamanho_particao = tamanho_particao
+        self.particoes = LinkedList()
         if self.politica == 'PF':
             self.qntdade_particoes = int(self.posicoes/self.tamanho_particao)
-            self.particoes = [None] * self.qntdade_particoes
-            for index, x in enumerate(self.particoes):
-                self.particoes[index] = particao(self.tamanho_particao)
+            for index in range (0,self.qntdade_particoes):
+                aux = particao(self.tamanho_particao,index*tamanho_particao)
+                self.particoes.coloca_final(aux)
            
-           
-    def tem_espaco(self):
-        for x in self.particoes:
-            if x.ocupado == 0:
-                return True
-        return False 
-    
-    def entrar(self, prog,tamanho):
-        if self.politica == 'PF':
-            self.entrar_particaoF(prog,tamanho)
-        elif self.fit == 'w' or self.fit == 'W':
-            self.entrar_particaoWF(prog,tamanho)
-        elif self.fit == 'F' or self.fit == 'f':
-            self.entrar_particaoFF(prog,tamanho)
-            
-            
-    def entrar_particaoWF(self,prog,tamanho):
-        pass
-    
-    def entrar_particaoFF(self,prog,tamanho):
-        pass
-            
-    def entrar_particaoF(self,prog,tamanho):
-        if self.tem_espaco():
-            if int(tamanho) <= self.tamanho_particao:
-                for x in self.particoes:
-                    if x.ocupado == 0:
-                        x.alocar(tamanho,prog[0])
-                        break
-            else:
-                print('Nao foi possivel alocar pelo programa ter tamanho maior que o das partições')
         else:
-            print('ESPAÇO INSUFICIENTE DE MEMORIA')
-        
-    def sair(self,prog):
-        for x in self.particoes:
-            if x.ocupado !=0 and x.dados[0] == prog[0]:
-                x.liberar()
-        
-    def representa_memoria(self):
-        auxiliar = 0
-        index = 0
+            aux = particao(self.posicoes,0)
+            self.particoes.coloca_final(aux)
+            
+           
+    def visualizacao(self):
         frag = []
-
-        for index, x in enumerate(self.particoes):
-            if x.ocupado == 0:
-                auxiliar += self.tamanho_particao
+        auxiliar = 0
+        atual = self.particoes.head
+        while (atual):
+            if atual.id == 'H':
+                auxiliar += atual.tamanho
             else:
-                auxiliar += x.nao_utilizado
-            if int(index) == int(self.qntdade_particoes)-1 and auxiliar != 0:
+                auxiliar += int(atual.tamanho) - int(atual.utilizado)      
+            if atual.next is None and auxiliar != 0:
                 frag.append(auxiliar)
-                return frag
-            if self.particoes[index+1].ocupado == 0:
-                pass
+                return frag   
+            if atual.next.id == "H":
+                pass        
             elif auxiliar != 0:
                 frag.append(auxiliar)
-                auxiliar = 0
+                auxiliar = 0                
+            atual = atual.next
             
         return frag
-            
+                  
+    def tem_espaco(self,tamanho):
+        atual = self.particoes.head
+        while(atual):
+            if atual.id == 'H' and int(atual.tamanho) >= int(tamanho):
+                return atual
+            atual = atual.next
+  
+        return False
         
+    def entrar(self,prog,tamanho):
+        if self.politica == 'PF':
+            self.entrar_PF(prog,tamanho)
+        if self.politica == 'PV':
+            self.entrar_PV(prog,tamanho)
+            
+    def entrar_PV(self,prog,tamanho):
+        espaco = self.tem_espaco(tamanho)
+        if espaco != False:
+            nova_part = particao(espaco.tamanho -int(tamanho), int(espaco.pos_inicial) + int(tamanho))
+            espaco.tamanho = int(tamanho)
+            espaco.id = prog[0]
+            espaco.utilizado = espaco.tamanho
+            self.particoes.coloca_apos(espaco,nova_part)
+                
+        else:
+            print("Sem espaço de memoria disponivel ")
+            
+            
+    def entrar_PF(self,prog,tamanho):
+        espaco = self.tem_espaco(tamanho)
+        if espaco != False:
+            espaco.utilizado = int(tamanho)
+            espaco.id = prog[0]
+        else:
+            print( "Sem espaço de memoria disponivel")
+
+
+    def sair(self,prog):
+        if self.politica == 'PF':
+            self.sair_PF(prog)
+        if self.politica == 'PV':
+            self.sair_PV(prog)
+            
+            
+    def sair_PV(self,prog):
+        atual = self.particoes.head
+        while (atual):
+            ant = atual.last
+            prox = atual.next
+            if atual.id == prog[0]:
+                if ant != None and ant.id == 'H':
+                    if prox != None and prox.id== 'H':
+                        ant.next = prox.next
+                        ant.tamanho = ant.tamanho + atual.tamanho + prox.tamanho
+                        if prox.next != None:
+                            prox.next.last = ant
+                        return
+                    else:
+                        ant.next = prox
+                        ant.tamanho += atual.tamanho
+                        prox.last = ant
+                        return
+                        
+                elif atual.next != None and atual.next.id == 'H':
+                    atual.next.last = ant
+                    atual.next.tamanho += atual.tamanho
+                    ant.next = atual.next
+                    return
+                else:
+                    atual.id = 'H'
+                    atual.utilizado = 0
+                    return
+            atual = atual.next
+                
+        
+    def sair_PF(self,prog):
+        atual = self.particoes.head
+        while(atual):
+            if atual.id == prog[0]:
+                atual.utilizado = 0
+                atual.id = 'H'
+                return
+            atual = atual.next
+        
+         
+class LinkedList:
+    def __init__(self):  
+        self.head = None
+  
+    def insert(self, part):
+        if(self.head):
+            current = self.head
+            while(current.next):
+                current = current.next
+            current.next = part
+        else:
+            self.head = part
+      
+    def coloca_final(self, part):
+
+        if self.head is None:
+            self.head = part
+            return
+ 
+        last = self.head
+        while last.next:
+            last = last.next
+ 
+        last.next = part
+        part.last = last
+       
+    def printLL(self):
+        current = self.head
+        while(current):
+            print(current.id)
+            current = current.next
+            
+    def coloca_apos(self,anterior,novo):
+        if anterior is None:
+            print("the given previous node cannot be NULL")
+            return
+ 
+        new_node = novo
+        new_node.next = anterior.next
+        anterior.next = new_node
+        new_node.last = anterior
+ 
+        if new_node.next:
+            new_node.next.last = new_node
+  
 class particao:
-    def __init__(self,tamanho):
-        self.tamanho = tamanho
-        self.nao_utilizado = tamanho
-        self.ocupado = 0
-        self.dados = [None] * tamanho
-
-
-    def alocar(self,tamanho_prog,id):
-        tamanho_prog = int(tamanho_prog)
-        for x in range (0,tamanho_prog):
-            self.dados[x] = id
-        self.nao_utilizado = self.nao_utilizado - tamanho_prog
-        self.ocupado = self.ocupado + tamanho_prog
-
-    def liberar (self):
-        for x in range (0,self.tamanho):
-            self.dados[x] = None
-        self.nao_utilizado = self.tamanho
-        self.ocupado = 0
+    def __init__(self,tamanho,ini,next=None,last = None):
+        self.id = 'H'
+        self.tamanho = int(tamanho)
+        self.pos_inicial = ini
+        self.next = next
+        self.last = last
+        self.utilizado = 0
+        
         
 #Funçao que recebe um string, le o arquivo e retorna seu conteudo  
 def leitura (arquivo):
@@ -108,6 +192,7 @@ def leitura (arquivo):
     arq.close()
     return descricao
 
+#Função para formatar a visualização da memoria
 def printa_memoria(frag):
     for x in frag:
         print( " | ",end = '')
@@ -115,24 +200,28 @@ def printa_memoria(frag):
         
     print (" |")
 
-def execucao(sequencia, Mem):
-    frag = Mem.representa_memoria()
+#Função que vai percorrer a lista de "in's" e "out's" e fazer as respectivas operações
+def execucao(sequencia,Mem):
+    frag = Mem.visualizacao()  
     printa_memoria(frag)
-    print('========================')  
-    
+    print("========================")
     for linha in sequencia:
         if linha[0] == 'IN':
+            print(linha)
             Mem.entrar(linha[1][0],linha[1][1])
         elif linha[0] == 'OUT':
-            Mem.sair(linha[1])
-        print(linha)
-        frag = Mem.representa_memoria()
+            print(linha[1])
+            Mem.sair(linha[1])   
+
+        frag = Mem.visualizacao()  
         printa_memoria(frag)
         print("========================")
         input("")      
-    
+
+
 def main():
-    arquivo = "descricao1.txt"
+    global LL
+    arquivo = "descricao3.txt"
     #arquivo = str(input("Digite o nome do arquivo: "))
     descricao = leitura(arquivo)
     politica = str(input("Digite a politica F - partição fixa, V - partição variavel: "))
@@ -140,11 +229,15 @@ def main():
         x = int(input("Digite o tamanho da memoria: "))
         y = int(input("Digite o tamanho das partições: "))
         Mem = memoria(x,y,'PF', None)
+        execucao(descricao,Mem)
+
     elif politica == 'V' or politica == 'v':
-        fit = str(input("Voce deseja qual politica de alocação? F - First-Fit W - Worst-Fit"))
+        fit = str(input("Voce deseja qual politica de alocação? F - First-Fit W - Worst-Fit: "))
         x = int(input("Digite o tamanho da memoria: "))
         Mem = memoria(x,0,'PV',fit)
-    execucao(descricao,Mem)
+        execucao(descricao,Mem)
+
     
+
 if __name__ == "__main__":
-    main()
+    main()       
