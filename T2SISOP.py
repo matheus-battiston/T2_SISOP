@@ -43,9 +43,8 @@ class memoria:
             if atual.id == 'H' and int(atual.tamanho) >= int(tamanho):
                 return atual
             atual = atual.next
-  
         return False
-        
+                
     def entrar(self,prog,tamanho):
         if self.politica == 'PF':
             self.entrar_PF(prog,tamanho)
