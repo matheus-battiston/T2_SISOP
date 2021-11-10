@@ -1,3 +1,4 @@
+# Alunos: Matheus Felipe Battiston e Henrique Andreata
 class Memoria:
     def __init__(self, posicoes, tamanho_particao, politica, fit):
         self.politica = politica
@@ -266,12 +267,9 @@ def execucao(sequencia, mem):
         frag = mem.visualizacao()
         printa_memoria(frag)
         print("========================")
-        input("")
-
 
 def main():
-    arquivo = "descricao1.txt"
-    # arquivo = str(input("Digite o nome do arquivo: "))
+    arquivo = str(input("Digite o nome do arquivo: "))
     descricao = leitura(arquivo)
     politica = str(input("Digite a politica F - partição fixa, V - partição variavel: "))
     if politica == 'F' or politica == 'f':
@@ -281,7 +279,7 @@ def main():
         execucao(descricao, mem)
 
     elif politica == 'V' or politica == 'v':
-        fit = str(input("Voce deseja qual politica de alocação? F - First-Fit W - Worst-Fit: "))
+        fit = str(input("Voce deseja qual politica de alocação? F - First-Fit, W - Worst-Fit: "))
         x = int(input("Digite o tamanho da memoria: "))
         mem = Memoria(x, 0, 'PV', fit)
         execucao(descricao, mem)
