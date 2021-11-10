@@ -49,7 +49,7 @@ class Memoria:
             esp = self.tem_espaco_part_fixa(tamanho)
             return esp
         else:
-            if self.fit == 'W':
+            if self.fit == 'W' or self.fit == 'w':
                 esp = self.tem_espaco_worst_fit(tamanho)
                 return esp
             else:
@@ -267,7 +267,7 @@ def execucao(sequencia, mem):
             print(linha)
             mem.entrar(linha[1][0], linha[1][1])
         elif linha[0] == 'OUT':
-            print(linha[1])
+            print(linha)
             mem.sair(linha[1])
 
         frag = mem.visualizacao()
