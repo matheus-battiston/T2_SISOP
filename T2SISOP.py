@@ -19,7 +19,7 @@ class Memoria:
     # Função para visualização dos resultados. Vai percorrer as partições procurando por fragmentações, retorna uma
     # lista com o tamanho das fragmentações
     def visualizacao(self):
-        frag = []
+        fragmentacao = []
         auxiliar = 0
         atual = self.particoes.head
         while atual:
@@ -29,32 +29,108 @@ class Memoria:
                 auxiliar += int(atual.tamanho) - int(atual.utilizado)
             if atual.next is None:
                 if auxiliar != 0:
-                    frag.append(auxiliar)
-                return frag
+                    fragmentacao.append(auxiliar)
+                return fragmentacao
             if atual.next.id == "H":
                 pass
             elif auxiliar != 0:
-                frag.append(auxiliar)
+                fragmentacao.append(auxiliar)
                 auxiliar = 0
             atual = atual.next
 
-        return frag
+        return fragmentacao
 
     # ================================================================================================================================
 
+    # Função chamada ao receber o comando "IN", ela chama uma nova função dependendo da politica.
+    def entrar(self, prog, tamanho):
+        if self.politica == 'PF':
+            self.entrar_pf(prog, tamanho)
+        if self.politica == 'PV':
+            self.entrar_pv(prog, tamanho)
+
+    # Função para colocar um programa na memoria na politica Partições Variaveis
+    def entrar_pv(self, prog, tamanho):
+        if self.fit == 'W' or self.fit == 'w':
+            espaco = self.tem_espaco_worst_fit(tamanho)
+        else:
+            espaco = self.tem_espaco_first_fit(tamanho)
+
+        if espaco is not False:
+            if espaco.tamanho != tamanho:
+                nova_part = Particao(espaco.tamanho - int(tamanho), int(espaco.pos_inicial) + int(tamanho))
+                espaco.tamanho = int(tamanho)
+                espaco.id = prog[0]
+                espaco.utilizado = espaco.tamanho
+                self.particoes.coloca_apos(espaco, nova_part)
+            elif espaco.tamanho == tamanho:
+                espaco.id = prog[0]
+                espaco.utilizado = espaco.tamanho
+
+        else:
+            print("Sem espaço de memoria disponivel ")
+
+    # Função para colocar um programa na memoria na politica Partições Fixas
+    def entrar_pf(self, prog, tamanho):
+        espaco = self.tem_espaco_part_fixa(tamanho)
+        if espaco is not False:
+            espaco.utilizado = int(tamanho)
+            espaco.id = prog[0]
+        else:
+            print("Sem espaço de memoria disponivel")
+
+    # Função chamada ao receber o comando 'OUT'. Chama outra função dependendo da politica
+    def sair(self, prog):
+        if self.politica == 'PF':
+            self.sair_pf(prog)
+        if self.politica == 'PV':
+            self.sair_pv(prog)
+
+    # Função que remove um programa da memoria e faz a junção de duas ou 3 partições caso estejam "lado a lado" e
+    # estejam vazias.
+    def sair_pv(self, prog):
+        atual = self.particoes.head
+        while atual:
+            ant = atual.last
+            prox = atual.next
+            if atual.id == prog[0]:
+                if ant is not None and ant.id == 'H':  # Testa se a partição anterior existe está vazia
+                    if prox is not None and prox.id == 'H':  # Testa se a proxima partição existe e  está vazia
+                        ant.next = prox.next
+                        ant.tamanho = ant.tamanho + atual.tamanho + prox.tamanho
+                        if prox.next is not None:
+                            prox.next.last = ant
+                        return
+                    else:
+                        ant.next = prox
+                        ant.tamanho += atual.tamanho
+                        prox.last = ant
+                        return
+
+                elif atual.next is not None and atual.next.id == 'H':  # Testa se a proxima partição existe e está vazia
+                    atual.next.last = ant
+                    atual.next.tamanho += atual.tamanho
+                    if ant is not None:
+                        ant.next = atual.next
+                    return
+                else:  # Se nenhuma partição do lado está vazia não irá se juntar com ninguém e vira um buraco
+                    atual.id = 'H'
+                    atual.utilizado = 0
+                    return
+            atual = atual.next
+
+    # Função para remover um programa da memoria na politica de partições variaveis
+    def sair_pf(self, prog):
+        atual = self.particoes.head
+        while atual:
+            if atual.id == prog[0]:
+                atual.utilizado = 0
+                atual.id = 'H'
+                return
+            atual = atual.next
+
     # Função para determinar se é possivel alocar espaço para um programa, se não for possivel retorna Falso,
     # se for possivel retorna a partição que será alocado.
-    def tem_espaco(self, tamanho):
-        if self.politica == 'PF':
-            esp = self.tem_espaco_part_fixa(tamanho)
-            return esp
-        else:
-            if self.fit == 'W' or self.fit == 'w':
-                esp = self.tem_espaco_worst_fit(tamanho)
-                return esp
-            else:
-                esp = self.tem_espaco_first_fit(tamanho)
-                return esp
 
     def tem_espaco_part_fixa(self, tamanho):
         atual = self.particoes.head
@@ -102,88 +178,16 @@ class Memoria:
 
         # ================================================================================================================================
 
-    # Função chamada ao receber o comando "IN", ela chama uma nova função dependendo da politica.
-    def entrar(self, prog, tamanho):
-        if self.politica == 'PF':
-            self.entrar_pf(prog, tamanho)
-        if self.politica == 'PV':
-            self.entrar_pv(prog, tamanho)
 
-    # Função para colocar um programa na memoria na politica Partições Variaveis
-    def entrar_pv(self, prog, tamanho):
-        espaco = self.tem_espaco(tamanho)
-        if espaco is not False:
-            if espaco.tamanho != tamanho:
-                nova_part = Particao(espaco.tamanho - int(tamanho), int(espaco.pos_inicial) + int(tamanho))
-                espaco.tamanho = int(tamanho)
-                espaco.id = prog[0]
-                espaco.utilizado = espaco.tamanho
-                self.particoes.coloca_apos(espaco, nova_part)
-            elif espaco.tamanho == tamanho:
-                espaco.id = prog[0]
-                espaco.utilizado = espaco.tamanho
-
-        else:
-            print("Sem espaço de memoria disponivel ")
-
-    # Função para colocar um programa na memoria na politica Partições Fixas
-    def entrar_pf(self, prog, tamanho):
-        espaco = self.tem_espaco(tamanho)
-        if espaco is not False:
-            espaco.utilizado = int(tamanho)
-            espaco.id = prog[0]
-        else:
-            print("Sem espaço de memoria disponivel")
-
-    # Função chamada ao receber o comando 'OUT'. Chama outra função dependendo da politica
-    def sair(self, prog):
-        if self.politica == 'PF':
-            self.sair_pf(prog)
-        if self.politica == 'PV':
-            self.sair_pv(prog)
-
-    # Função que remove um programa da memoria e faz a junção de duas ou 3 partições caso estejam "lado a lado" e
-    # estejam vazias.
-    def sair_pv(self, prog):
-        atual = self.particoes.head
-        while atual:
-            ant = atual.last
-            prox = atual.next
-            if atual.id == prog[0]:
-                if ant is not None and ant.id == 'H':  # Testa se a partição anterior existe está vazia
-                    if prox is not None and prox.id == 'H':  # Testa se a proxima partição existe e  está vazia
-                        ant.next = prox.next
-                        ant.tamanho = ant.tamanho + atual.tamanho + prox.tamanho
-                        if prox.next is not None:
-                            prox.next.last = ant
-                        return
-                    else:
-                        ant.next = prox
-                        ant.tamanho += atual.tamanho
-                        prox.last = ant
-                        return
-
-                elif atual.next is not None and atual.next.id == 'H':  # Testa se a proxima partição existe e está vazia
-                    atual.next.last = ant
-                    atual.next.tamanho += atual.tamanho
-                    if ant is not None:
-                        ant.next = atual.next
-                    return
-                else:
-                    atual.id = 'H'
-                    atual.utilizado = 0
-                    return
-            atual = atual.next
-
-    # Função para remover um programa da memoria na politica de partições variaveis
-    def sair_pf(self, prog):
-        atual = self.particoes.head
-        while atual:
-            if atual.id == prog[0]:
-                atual.utilizado = 0
-                atual.id = 'H'
-                return
-            atual = atual.next
+# Classe que representa cada partição
+class Particao:
+    def __init__(self, tamanho, ini):
+        self.id = 'H'
+        self.tamanho = int(tamanho)
+        self.pos_inicial = ini
+        self.next = None
+        self.last = None
+        self.utilizado = 0
 
 
 # Classe para implementação da lista encadeada
@@ -219,17 +223,6 @@ class LinkedList:
 
         if new_node.next:
             new_node.next.last = new_node
-
-
-# Classe que representa cada partição
-class Particao:
-    def __init__(self, tamanho, ini):
-        self.id = 'H'
-        self.tamanho = int(tamanho)
-        self.pos_inicial = ini
-        self.next = None
-        self.last = None
-        self.utilizado = 0
 
 
 # Funçao que recebe um string, le o arquivo e retorna seu conteudo
