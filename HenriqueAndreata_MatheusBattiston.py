@@ -52,12 +52,15 @@ class Memoria:
 
     # Função para colocar um programa na memoria na politica Partições Variaveis
     def entrar_pv(self, prog, tamanho):
+        # espaco será False caso não tenha espaço para o programa ou será o espaço escolhido para colocar o programa
         if self.fit == 'W' or self.fit == 'w':
             espaco = self.tem_espaco_worst_fit(tamanho)
         else:
             espaco = self.tem_espaco_first_fit(tamanho)
 
         if espaco is not False:
+            #  Se o espaço encontrado for do tamanho necessario para o programa apenas coloca ele ali, caso seja
+            #  diferente irá criar uma nova partição para utilizar apenas o espaço requisitado
             if espaco.tamanho != tamanho:
                 nova_part = Particao(espaco.tamanho - int(tamanho), int(espaco.pos_inicial) + int(tamanho))
                 espaco.tamanho = int(tamanho)
@@ -73,6 +76,7 @@ class Memoria:
 
     # Função para colocar um programa na memoria na politica Partições Fixas
     def entrar_pf(self, prog, tamanho):
+        #  espaco será False caso não tenha uma partição livre ou será a partição que será utilizada
         espaco = self.tem_espaco_part_fixa(tamanho)
         if espaco is not False:
             espaco.utilizado = int(tamanho)
@@ -91,24 +95,26 @@ class Memoria:
     # estejam vazias.
     def sair_pv(self, prog):
         atual = self.particoes.head
-        while atual:
+        while atual:  # Percorre a linked list procurando a partição em que o programa se encontra
             ant = atual.last
             prox = atual.next
-            if atual.id == prog[0]:
-                if ant is not None and ant.id == 'H':  # Testa se a partição anterior existe está vazia
-                    if prox is not None and prox.id == 'H':  # Testa se a proxima partição existe e  está vazia
+            if atual.id == prog[0]:  # Caso encontre a partição em que está o programa começa o processo de remoção
+                if ant is not None and ant.id == 'H':  # Testa se a partição anterior existe e está vazia
+                    if prox is not None and prox.id == 'H':  # Testa se a proxima partição existe e  está vazia,
+                        # caso as duas estejam vazias irá juntar as 3 partições em uma só e vira um buraco
                         ant.next = prox.next
                         ant.tamanho = ant.tamanho + atual.tamanho + prox.tamanho
                         if prox.next is not None:
                             prox.next.last = ant
                         return
-                    else:
+                    else:  # Caso apenas a partição anterior esteja vazia junta apenas essas duas que serão um buraco
                         ant.next = prox
                         ant.tamanho += atual.tamanho
                         prox.last = ant
                         return
 
                 elif atual.next is not None and atual.next.id == 'H':  # Testa se a proxima partição existe e está vazia
+                    #  Se estiver as duas partições irão virar uma e serão um buraco
                     atual.next.last = ant
                     atual.next.tamanho += atual.tamanho
                     if ant is not None:
@@ -123,7 +129,7 @@ class Memoria:
     # Função para remover um programa da memoria na politica de partições variaveis
     def sair_pf(self, prog):
         atual = self.particoes.head
-        while atual:
+        while atual:  # Percorre a lista procurando a partição em que o programa está
             if atual.id == prog[0]:
                 atual.utilizado = 0
                 atual.id = 'H'
@@ -143,7 +149,7 @@ class Memoria:
 
     def tem_espaco_first_fit(self, tamanho):
         atual = self.particoes.head
-        menor = None
+        menor = None  # Contém a partição com menor espaço possível disponivel
         if atual.next is None and (atual.id != 'H' or int(atual.tamanho) <= int(tamanho)):
             return False
         while atual:
@@ -267,6 +273,7 @@ def execucao(sequencia, mem):
         frag = mem.visualizacao()
         printa_memoria(frag)
         print("========================")
+
 
 def main():
     arquivo = str(input("Digite o nome do arquivo: "))
