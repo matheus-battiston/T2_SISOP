@@ -24,7 +24,7 @@ class Memoria:
         auxiliar = 0
         atual = self.particoes.head
         while atual:
-            if atual.id == 'H':
+            if atual.tipo == 'H':
                 auxiliar += atual.tamanho
             else:
                 auxiliar += int(atual.tamanho) - int(atual.utilizado)
@@ -32,7 +32,7 @@ class Memoria:
                 if auxiliar != 0:
                     fragmentacao.append(auxiliar)
                 return fragmentacao
-            if atual.next.id == "H":
+            if atual.next.tipo == "H":
                 pass
             elif auxiliar != 0:
                 fragmentacao.append(auxiliar)
@@ -41,6 +41,18 @@ class Memoria:
 
         return fragmentacao
 
+    def mostra_memoria_completa(self):
+        memoria = []
+        atual = self.particoes.head
+        while atual:
+            if atual.tipo == 'H':
+                memoria.append(('H', atual.tamanho))
+            elif atual.tipo == 'P':
+                memoria.append((atual.id, atual.utilizado))
+
+            atual = atual.next
+
+        return memoria
     # ================================================================================================================================
 
     # Função chamada ao receber o comando "IN", ela chama uma nova função dependendo da politica.
@@ -65,10 +77,12 @@ class Memoria:
                 nova_part = Particao(espaco.tamanho - int(tamanho), int(espaco.pos_inicial) + int(tamanho))
                 espaco.tamanho = int(tamanho)
                 espaco.id = prog[0]
+                espaco.tipo = 'P'
                 espaco.utilizado = espaco.tamanho
                 self.particoes.coloca_apos(espaco, nova_part)
             elif espaco.tamanho == tamanho:
                 espaco.id = prog[0]
+                espaco.tipo = 'P'
                 espaco.utilizado = espaco.tamanho
 
         else:
@@ -81,6 +95,7 @@ class Memoria:
         if espaco is not False:
             espaco.utilizado = int(tamanho)
             espaco.id = prog[0]
+            espaco.tipo = 'P'
         else:
             print("Sem espaço de memoria disponivel")
 
@@ -99,8 +114,8 @@ class Memoria:
             ant = atual.last
             prox = atual.next
             if atual.id == prog[0]:  # Caso encontre a partição em que está o programa começa o processo de remoção
-                if ant is not None and ant.id == 'H':  # Testa se a partição anterior existe e está vazia
-                    if prox is not None and prox.id == 'H':  # Testa se a proxima partição existe e  está vazia,
+                if ant is not None and ant.tipo == 'H':  # Testa se a partição anterior existe e está vazia
+                    if prox is not None and prox.tipo == 'H':  # Testa se a proxima partição existe e  está vazia,
                         # caso as duas estejam vazias irá juntar as 3 partições em uma só e vira um buraco
                         ant.next = prox.next
                         ant.tamanho = ant.tamanho + atual.tamanho + prox.tamanho
@@ -113,15 +128,19 @@ class Memoria:
                         prox.last = ant
                         return
 
-                elif atual.next is not None and atual.next.id == 'H':  # Testa se a proxima partição existe e está vazia
+                elif prox is not None and prox.tipo == 'H':  # Testa se a proxima partição existe e está
+                    # vazia
                     #  Se estiver as duas partições irão virar uma e serão um buraco
-                    atual.next.last = ant
-                    atual.next.tamanho += atual.tamanho
-                    if ant is not None:
-                        ant.next = atual.next
+                    atual.id = None
+                    atual.tipo = 'H'
+                    atual.utilizado = 0
+                    atual.next = prox.next
+                    prox.next.last = atual
+                    atual.tamanho += prox.tamanho
                     return
                 else:  # Se nenhuma partição do lado está vazia não irá se juntar com ninguém e vira um buraco
-                    atual.id = 'H'
+                    atual.tipo = 'H'
+                    atual.id = None
                     atual.utilizado = 0
                     return
             atual = atual.next
@@ -132,7 +151,8 @@ class Memoria:
         while atual:  # Percorre a lista procurando a partição em que o programa está
             if atual.id == prog[0]:
                 atual.utilizado = 0
-                atual.id = 'H'
+                atual.id = None
+                atual.tipo = 'H'
                 return
             atual = atual.next
 
@@ -142,7 +162,7 @@ class Memoria:
     def tem_espaco_part_fixa(self, tamanho):
         atual = self.particoes.head
         while atual:
-            if atual.id == 'H' and int(atual.tamanho) >= int(tamanho):
+            if atual.tipo == 'H' and int(atual.tamanho) >= int(tamanho):
                 return atual
             atual = atual.next
         return False
@@ -150,10 +170,10 @@ class Memoria:
     def tem_espaco_first_fit(self, tamanho):
         atual = self.particoes.head
         menor = None  # Contém a partição com menor espaço possível disponivel
-        if atual.next is None and (atual.id != 'H' or int(atual.tamanho) <= int(tamanho)):
+        if atual.next is None and (atual.tipo == 'P' or int(atual.tamanho) <= int(tamanho)):
             return False
         while atual:
-            if atual.id == 'H' and int(atual.tamanho) >= int(tamanho):
+            if atual.tipo == 'H' and int(atual.tamanho) >= int(tamanho):
                 if menor is None:
                     menor = atual
                 elif atual.tamanho < menor.tamanho:
@@ -168,10 +188,10 @@ class Memoria:
     def tem_espaco_worst_fit(self, tamanho):
         atual = self.particoes.head
         maior = None
-        if atual.next is None and (atual.id != 'H' or int(atual.tamanho) <= int(tamanho)):
+        if atual.next is None and (atual.tipo == 'P' or int(atual.tamanho) <= int(tamanho)):
             return False
         while atual:
-            if atual.id == 'H' and int(atual.tamanho) >= int(tamanho):
+            if atual.tipo == 'H' and int(atual.tamanho) >= int(tamanho):
                 if maior is None:
                     maior = atual
                 elif int(atual.tamanho) > maior.tamanho:
@@ -189,7 +209,8 @@ class Memoria:
 # Classe que representa cada partição
 class Particao:
     def __init__(self, tamanho, ini):
-        self.id = 'H'
+        self.id = None
+        self.tipo = 'H'
         self.tamanho = int(tamanho)
         self.pos_inicial = ini
         self.next = None
@@ -261,6 +282,8 @@ def printa_memoria(frag):
 def execucao(sequencia, mem):
     frag = mem.visualizacao()
     printa_memoria(frag)
+    print('Memoria completa\n')
+    print(mem.mostra_memoria_completa())
     print("========================")
     for linha in sequencia:
         if linha[0] == 'IN':
@@ -272,13 +295,15 @@ def execucao(sequencia, mem):
 
         frag = mem.visualizacao()
         printa_memoria(frag)
+        print('Memoria completa')
+        print(mem.mostra_memoria_completa())
         print("========================")
 
 
 def main():
     arquivo = str(input("Digite o nome do arquivo: "))
     descricao = leitura(arquivo)
-    politica = str(input("Digite a politica F - partição fixa, V - partição variavel: "))
+    politica = str(input("Digite a politica:\n F - partição fixa \n V - partição variavel:\n "))
     if politica == 'F' or politica == 'f':
         x = int(input("Digite o tamanho da memoria: "))
         y = int(input("Digite o tamanho das partições: "))
@@ -286,8 +311,8 @@ def main():
         execucao(descricao, mem)
 
     elif politica == 'V' or politica == 'v':
-        fit = str(input("Voce deseja qual politica de alocação? F - First-Fit, W - Worst-Fit: "))
-        x = int(input("Digite o tamanho da memoria: "))
+        fit = str(input("Voce deseja qual politica de alocação?\n F - First-Fit\n W - Worst-Fit: "))
+        x = int(input("Digite o tamanho da memoria:\n "))
         mem = Memoria(x, 0, 'PV', fit)
         execucao(descricao, mem)
 
